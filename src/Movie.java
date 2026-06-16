@@ -1,5 +1,5 @@
-public class Movie {
-//	khai bao thuoc tinh class movie
+public class Movie implements Subject{
+//	thuoc tinh movie
 	private int id;
 	private String nameMovie;
 	private String director;
@@ -21,7 +21,7 @@ public class Movie {
 		this.link = link;
 		this.isVip = isVip;
 	}
-//	geter setter
+//	getter setter
 	public int getId() {
 		return id;
 	}
@@ -70,6 +70,23 @@ public class Movie {
 	public void setVip(boolean isVip) {
 		this.isVip = isVip;
 	}
-	
+//	phuong thuc khac
+	public void getDetails() {};
+	public void watchMovie() {}
+	@Override
+	public void resister(Observer o) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void unResister(Observer o) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void notify(Observer o) {
+		// TODO Auto-generated method stub
+		
+	};
 	
 }

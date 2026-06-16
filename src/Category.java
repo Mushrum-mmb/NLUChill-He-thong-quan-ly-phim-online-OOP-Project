@@ -3,7 +3,7 @@ public class Category {
 //	khai bao thuoc tinh
 	private String category;
 	private int id;
-//	tao constructor
+//	constructor category
 	public Category(String category, int id) {
 		super();
 		this.category = category;
