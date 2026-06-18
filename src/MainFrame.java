@@ -39,10 +39,12 @@ import models.Payment;
 import models.PaymentStrategy;
 import models.User;
 import models.VisaPayment;
+import views.AdminView;
 import views.LoginView;
-import views.LoginView.AdminPanel;
+import views.MemberView;
 import views.MovieView;
 import views.PaymentView;
+import views.RoundBorder;
 import views.Theme;
 
 public class MainFrame extends JFrame {
@@ -216,10 +218,10 @@ public class MainFrame extends JFrame {
 
         if (isAdmin) {
             // ── Admin Panel ──
-        	AdminPanel adminPanel = new LoginView.AdminPanel();
+        	AdminView adminPanel = new AdminView();
             adminPanel.loadMovies(allMovies);
             adminPanel.loadUsers(allUsers);
-            adminPanel.setAdminListener(new LoginView.AdminPanel.AdminListener() {
+            adminPanel.setAdminListener(new AdminView.AdminListener() {
                 @Override public void onAddMovie(Movie m) {
                     allMovies.add(m);
                     movieController = new MovieController(allMovies);
@@ -378,7 +380,7 @@ public class MainFrame extends JFrame {
     // ════════════════════════════════════════════
     //  PROFILE PANEL
     // ════════════════════════════════════════════
-    private LoginView.UserPanel userPanel; // giữ tham chiếu để refresh sau thay đổi
+    private MemberView memberView; // giữ tham chiếu để refresh sau thay đổi
 
     private JPanel buildProfilePanel() {
         // Admin: hiển thị card đơn giản (chỉ xem, không chỉnh sửa)
@@ -411,9 +413,9 @@ public class MainFrame extends JFrame {
         }
 
         // User: dùng UserPanel đầy đủ (cập nhật, đổi mật khẩu, xóa tài khoản)
-        userPanel = new LoginView.UserPanel();
-        userPanel.loadMember(currentMember);
-        userPanel.setUserListener(new LoginView.UserPanel.UserListener() {
+        MemberView memView = new MemberView();
+        memView.loadMember(currentMember);
+        memView.setUserListener(new MemberView.MemberListener() {
 
             @Override
             public void onUpdateProfile(Member member, String newName, String newEmail) {
@@ -437,7 +439,7 @@ public class MainFrame extends JFrame {
                 t.setRepeats(false); t.start();
             }
         });
-        return userPanel;
+        return memView;
     }
 
     // ── Toast notification ──
@@ -447,7 +449,7 @@ public class MainFrame extends JFrame {
         lbl.setFont(Theme.fontBold(13)); lbl.setForeground(Color.WHITE);
         lbl.setOpaque(true); lbl.setBackground(new Color(30,38,65));
         lbl.setBorder(BorderFactory.createCompoundBorder(
-            new LoginView.RoundBorder(Theme.ACCENT,10), BorderFactory.createEmptyBorder(10,16,10,16)));
+            new RoundBorder(Theme.ACCENT,10), BorderFactory.createEmptyBorder(10,16,10,16)));
         toast.add(lbl); toast.pack();
         Point loc = getLocation();
         toast.setLocation(loc.x+(getWidth()-toast.getWidth())/2, loc.y+getHeight()-70);

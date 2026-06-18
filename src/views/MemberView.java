@@ -203,7 +203,11 @@ public class MemberView extends JPanel {
         JButton saveBtn = colorBtn("Lưu thay đổi", Theme.ACCENT);
         saveBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         saveBtn.setAlignmentX(LEFT_ALIGNMENT);
-        saveBtn.addActionListener(e -> MemberController.handleUpdateProfile(nameEditField, emailEditField));
+        saveBtn.addActionListener(e -> {
+            String newName = nameEditField.getText().trim();
+            String newEmail = emailEditField.getText().trim();
+            MemberController.handleUpdateProfile(this, currentMember, newName, newEmail);
+        });
 
         card.add(title);
         card.add(Box.createVerticalStrut(14));
@@ -243,7 +247,12 @@ public class MemberView extends JPanel {
         JButton changeBtn = colorBtn("Đổi mật khẩu", new Color(59, 130, 246));
         changeBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         changeBtn.setAlignmentX(LEFT_ALIGNMENT);
-        changeBtn.addActionListener(e -> MemberController.handleChangePassword());
+        changeBtn.addActionListener(e -> {
+            String oldPass = new String(oldPassField.getPassword());
+            String newPass = new String(newPassField.getPassword());
+            String confirm = new String(confirmPassField.getPassword());
+            MemberController.handleChangePassword(this, currentMember, oldPass, newPass, confirm);
+        });
 
         card.add(title);
         card.add(Box.createVerticalStrut(14));
@@ -296,7 +305,7 @@ public class MemberView extends JPanel {
         JButton deleteBtn = colorBtn("Xóa tài khoản của tôi", Theme.ERROR);
         deleteBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         deleteBtn.setAlignmentX(LEFT_ALIGNMENT);
-        deleteBtn.addActionListener(e -> MemberController.handleDeleteAccount());
+        deleteBtn.addActionListener(e -> MemberController.handleDeleteAccount(this, currentMember));
 
         card.add(title);
         card.add(Box.createVerticalStrut(10));
@@ -309,7 +318,31 @@ public class MemberView extends JPanel {
     // ══════════════════════════════════════════
     //  XỬ LÝ SỰ KIỆN
     // ══════════════════════════════════════════
+    // Thêm các hàm hỗ trợ hiển thị lỗi
+    public void setProfileMsg(String msg, Color color) {
+        profileMsgLabel.setText(msg); 
+        profileMsgLabel.setForeground(color);
+    }
 
+    public void setPassMsg(String msg, Color color) {
+        passMsgLabel.setText(msg); 
+        passMsgLabel.setForeground(color);
+    }
+
+    public void clearProfileEditFields() {
+        nameEditField.setText("");
+        emailEditField.setText("");
+    }
+
+    public void clearPasswordFields() {
+        oldPassField.setText(""); 
+        newPassField.setText(""); 
+        confirmPassField.setText("");
+    }
+
+    public MemberListener getUserListener() {
+        return this.userListener;
+    }
     
     // ── Cập nhật hiển thị sau thay đổi từ bên ngoài ──
     public void refreshDisplay() {
