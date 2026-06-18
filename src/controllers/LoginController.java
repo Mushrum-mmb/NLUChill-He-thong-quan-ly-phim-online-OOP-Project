@@ -1,5 +1,8 @@
+package controllers;
 
 import java.util.List;
+
+import models.Member;
 
 public class LoginController{
 	  private List<Member> userStore;

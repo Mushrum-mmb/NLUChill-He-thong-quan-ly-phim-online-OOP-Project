@@ -1,10 +1,11 @@
+package controllers;
 
 
 import java.util.ArrayList;
 import java.util.List;
 
-import Model.Member;
-import Model.Movie;
+import models.Member;
+import models.Movie;
 
 public class MovieController {
 	private List<Movie> movieStore;

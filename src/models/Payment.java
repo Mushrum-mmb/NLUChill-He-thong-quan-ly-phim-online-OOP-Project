@@ -1,20 +1,18 @@
-import java.sql.Date;
+package models;
+
+import java.util.Date;
 
 public class Payment {
-//	 thuoc tinh payment
-	private int id;
-	private Date paymentDate;
-	private int price;
-	private String service;
-//	constructor payment
-	public Payment(int id, Date paymentDate, int price, String service) {
-		super();
-		this.id = id;
-		this.paymentDate = paymentDate;
-		this.price = price;
-		this.service = service;
-	}
-//	getters setters
+    private int    id;
+    private Date   paymentDate;
+    private int    price;
+    private String service;
+    public Payment(int id, Date paymentDate, int price, String service) {
+        this.id = id; 
+        this.paymentDate = paymentDate;
+        this.price = price; 
+        this.service = service;
+    }
 	public int getId() {
 		return id;
 	}
@@ -39,5 +37,6 @@ public class Payment {
 	public void setService(String service) {
 		this.service = service;
 	}
-	
+
+    
 }

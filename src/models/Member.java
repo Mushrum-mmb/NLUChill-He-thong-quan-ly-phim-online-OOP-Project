@@ -1,6 +1,7 @@
+package models;
 import java.sql.Date;
 
-public class Member extends User{
+public class Member extends User implements Observer{
 //	thuoc tinh member
 	private String AccountStatus;
 	private Date expiredVIP;
@@ -24,5 +25,10 @@ public class Member extends User{
 		this.expiredVIP = expiredVIP;
 	}
 //	phuong thuc khac
-	public void upgradeVIP() {};
+	public void upgradeVIP() {}
+	@Override
+	public void update(String notification) {
+		// TODO Auto-generated method stub
+		
+	};
 }

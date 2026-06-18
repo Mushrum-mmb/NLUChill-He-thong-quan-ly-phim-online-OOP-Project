@@ -1,3 +1,4 @@
+package models;
 
 public class Rating {
 //	thuoc tinh rating

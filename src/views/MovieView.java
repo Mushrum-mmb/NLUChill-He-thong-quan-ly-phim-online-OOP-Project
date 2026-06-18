@@ -1,8 +1,11 @@
+package views;
 
 
-import Model.*;
 import javax.swing.*;
 import javax.swing.border.*;
+
+import models.Movie;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
@@ -55,7 +58,7 @@ public class MovieView extends JPanel {
     public void showPlayer(Movie movie, boolean isMember) {
         JDialog dialog = new JDialog(
             (Frame) SwingUtilities.getWindowAncestor(this),
-            "🎬  " + movie.getNameMovie(), true);
+            movie.getNameMovie(), true);
         dialog.setSize(680, 680);
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(Theme.BG_DARK);
@@ -264,7 +267,7 @@ public class MovieView extends JPanel {
         header.setBackground(Theme.BG_DARK);
         header.setBorder(BorderFactory.createEmptyBorder(24, 32, 12, 32));
 
-        JLabel title = new JLabel("🎬  Danh sách phim");
+        JLabel title = new JLabel("Danh sách phim");
         title.setFont(Theme.fontBold(22)); title.setForeground(Theme.TEXT_PRIMARY);
 
         JPanel searchBar = new JPanel(new BorderLayout()) {

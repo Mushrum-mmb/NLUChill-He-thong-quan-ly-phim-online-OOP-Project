@@ -1,11 +1,9 @@
-
-
-
+package controllers;
 import java.util.Date;
 
-import Model.Member;
-import Model.Payment;
-import Model.PaymentStrategy;
+import models.Member;
+import models.Payment;
+import models.PaymentStrategy;
 
 public class PaymentController {
 
@@ -17,7 +15,7 @@ public class PaymentController {
         int price = PRICES[packageIndex];
         System.out.println("Processing VIP upgrade: " + LABELS[packageIndex] + " = " + price + " VND");
             member.upgradeVIP();
-            Payment payment = new Payment(0, new Date(), price, "VIP-" + LABELS[packageIndex]);
+            Payment payment = new Payment(0, null, price, "VIP-" + LABELS[packageIndex]);
             System.out.println("Payment recorded: " + payment);
             return payment;
         }

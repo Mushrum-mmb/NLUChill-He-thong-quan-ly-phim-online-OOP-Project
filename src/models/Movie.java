@@ -1,3 +1,4 @@
+package models;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,16 +26,16 @@ public class Movie implements Subject{
 		this.link = link;
 		this.isVip = isVip;
 		ob = new ArrayList<>();
+	
 		
 	}
-	@Override
-	public void resister(Observer o) {
+	public void register(Observer o) {
 		// TODO Auto-generated method stub
 		ob.add(o);
 		System.out.println("Bạn đã đăng kí nhận thông báo thành công");
 	}
 	@Override
-	public void unResister(Observer o) {
+	public void unRegister(Observer o) {
 		// TODO Auto-generated method stub
 		ob.remove(o);
 		System.out.println("Bạn đã hủy đăng kí nhận thông báo thành công");

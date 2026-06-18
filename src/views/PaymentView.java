@@ -1,11 +1,4 @@
-
-
-import Controller.PaymentController;
-import Model.Member;
-import Model.Payment;
-import Model.MomoPayment;
-import Model.VisaPayment;
-import Model.PaymentStrategy;
+package views;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -66,7 +59,7 @@ public class PaymentView extends JPanel {
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         formPanel.setBorder(BorderFactory.createEmptyBorder(28, 32, 32, 32));
 
-        JLabel title = new JLabel("💎  Nâng cấp VIP");
+        JLabel title = new JLabel("Nâng cấp VIP");
         title.setFont(Theme.fontBold(22)); title.setForeground(Theme.TEXT_PRIMARY);
         title.setAlignmentX(LEFT_ALIGNMENT);
 

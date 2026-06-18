@@ -1,3 +1,4 @@
+package models;
 
 public class Category {
 //	khai bao thuoc tinh

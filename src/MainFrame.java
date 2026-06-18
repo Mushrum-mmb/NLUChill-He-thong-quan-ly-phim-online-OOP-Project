@@ -1,41 +1,62 @@
-
-
-import Controller.*;
-
-import Model.Category;
-import Model.Member;
-import Model.MomoPayment;
-import Model.Movie;
-import Model.Payment;
-import Model.PaymentStrategy;
-import Model.User;
-import Model.VisaPayment;
-import View.LoginView.AdminPanel;
-
-import javax.swing.*;
-import javax.swing.Timer;
-import javax.swing.border.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.*;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.Point;
+import java.awt.RenderingHints;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-public class MainFrame extends JFrame {
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JWindow;
+import javax.swing.SwingConstants;
+import javax.swing.Timer;
 
+import controllers.LoginController;
+import controllers.LoginDTO;
+import controllers.MovieController;
+import controllers.PaymentController;
+import controllers.UserDTO;
+import models.Category;
+import models.Member;
+import models.MomoPayment;
+import models.Movie;
+import models.Payment;
+import models.PaymentStrategy;
+import models.User;
+import models.VisaPayment;
+import views.LoginView;
+import views.LoginView.AdminPanel;
+import views.MovieView;
+import views.PaymentView;
+import views.Theme;
+
+public class MainFrame extends JFrame {
+//	khoi tao panel
     private JPanel      mainContent;
     private CardLayout  cardLayout;
     private JPanel      sidebar;
     private JButton[]   navBtns;
 
+//  views
     private LoginView   loginView;
     private MovieView   movieView;
     private PaymentView paymentView;
-
-    private static final String[] USER_PAGES  = {"Movies", "VIP",   "Profile"};
-    private static final String[] USER_ICONS  = {"🎬",    "💎",    "👤"};
-    private static final String[] ADMIN_PAGES = {"Movies", "Admin", "Profile"};
-    private static final String[] ADMIN_ICONS = {"🎬",    "🛠",    "👤"};
-
+//	controllers
     private LoginController   loginController;
     private MovieController   movieController;
     private PaymentController paymentController;
@@ -44,11 +65,15 @@ public class MainFrame extends JFrame {
     private boolean      isAdmin = false;
     private List<Movie>  allMovies;
     private List<Member> allUsers;
-
+    
+    private static final String[] USER_PAGES  = {"Movies", "VIP",   "Profile"};
+    private static final String[] ADMIN_PAGES = {"Movies", "Admin", "Profile"};
+    
+//  khoi tao mainframe
     public MainFrame() {
-        setTitle("CineStream — Movie Platform");
+        setTitle("NLUChill — Movie Management Platform");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1150, 720);
+        setSize(1080, 720);
         setMinimumSize(new Dimension(860, 580));
         setLocationRelativeTo(null);
         getContentPane().setBackground(Theme.BG_DARK);
@@ -60,35 +85,32 @@ public class MainFrame extends JFrame {
     //  DỮ LIỆU MẪU
     // ════════════════════════════════════════════
     private void initData() {
-        Category action   = new Category(1, "Action");
-        Category drama    = new Category(2, "Drama");
-        Category scifi    = new Category(3, "Sci-Fi");
-        Category comedy   = new Category(4, "Comedy");
-        Category thriller = new Category(5, "Thriller");
-
+//        khoi tao the loai phim
+    	Category action   = new Category("Action", 1);
+        Category drama    = new Category("Drama", 2);
+        Category scifi    = new Category("Sci-Fi", 3);
+        Category comedy   = new Category("Comedy", 4);
+//        danh sach phim
         allMovies = new ArrayList<>(Arrays.asList(
-            new Movie(1, "The Dark Knight",   "Christopher Nolan",  "Christian Bale",      action,   "USA",     "/v/dk",  false),
-            new Movie(2, "Inception",         "Christopher Nolan",  "Leonardo DiCaprio",   scifi,    "USA",     "/v/inc", true),
-            new Movie(3, "Parasite",          "Bong Joon-ho",       "Song Kang-ho",        thriller, "Korea",   "/v/par", false),
-            new Movie(4, "Interstellar",      "Christopher Nolan",  "Matthew McConaughey", scifi,    "USA",     "/v/int", true),
-            new Movie(5, "The Godfather",     "F.F. Coppola",       "Marlon Brando",       drama,    "USA",     "/v/gf",  false),
-            new Movie(6, "Avengers: Endgame", "Russo Brothers",     "Robert Downey Jr.",   action,   "USA",     "/v/av",  true),
-            new Movie(7, "Spirited Away",     "Hayao Miyazaki",     "Daveigh Chase",       drama,    "Japan",   "/v/sa",  false),
-            new Movie(8, "Grand Budapest",    "Wes Anderson",       "Ralph Fiennes",       comedy,   "Germany", "/v/gb",  true),
-            new Movie(9, "Oppenheimer",       "Christopher Nolan",  "Cillian Murphy",      drama,    "USA",     "/v/op",  true)
+            new Movie(1, "The Dark Knight","Christopher Nolan", "Christian Bale", action, "USA", null, false),
+            new Movie(2, "Inception", "Christopher Nolan", "Leonardo DiCaprio", scifi, "USA", null, true),
+            new Movie(3, "Interstellar", "Christopher Nolan", "Matthew McConaughey", scifi, "USA", null, true),
+            new Movie(4, "The Godfather", "F.F. Coppola", "Marlon Brando", drama, "USA", null, false),
+            new Movie(5, "Grand Budapest", "Wes Anderson", "Ralph Fiennes", comedy, "Germany", null, true),
+            new Movie(6, "Oppenheimer", "Christopher Nolan", "Cillian Murphy", drama, "USA", null, true)
         ));
-
+//        danh sach nguoi dung
         allUsers = new ArrayList<>(Arrays.asList(
             new Member(1, "phuonghuyen@gmail.com",   "pass123", "Regular", null),
-            new Member(2, "bob@email.com",     "pass123", "VIP",     null),
-            new Member(3, "charlie@email.com", "pass123", "Regular", null),
-            new Member(4, "diana@email.com",   "pass123", "VIP",     null),
-            new Member(5, "eve@email.com",     "pass123", "LOCKED",  null)
+            new Member(2, "namush727@gmail.com",     "pass123", "VIP",     null),
+            new Member(3, "bichvan@gmail.com", "pass123", "Regular", null),
+            new Member(4, "ngannn@gmail.com",   "pass123", "VIP",     null),
+            new Member(5, "hieuquangemail.com",     "pass123", "LOCKED",  null)
         ));
 
-        // Đăng ký Observer: alice theo dõi 2 phim đầu
+        // Đăng ký Observer: alice theo dõi và bỏ theo dõi phim đầu
         allMovies.get(0).register(allUsers.get(0));
-        allMovies.get(1).register(allUsers.get(0));
+        allMovies.get(0).unRegister(allUsers.get(0));
 
         loginController   = new LoginController(allUsers);
         movieController   = new MovieController(allMovies);
@@ -106,32 +128,45 @@ public class MainFrame extends JFrame {
         loginView.setAuthListener(new LoginView.AuthListener() {
             @Override
             public void onLogin(String email, String password) {
-                if (email.equals("admin@gmail.com") && password.equals("admin123")) {
+                // xu ly dang nhap admin
+            	if (email.equals("admin@gmail.com") && password.equals("admin123")) {
                     isAdmin = true;
                     currentMember = new Member(0, email, password, "Admin", null);
-                    showMainApp(); return;
+                    showMainApp(); 
+                    return;
                 }
+            	// xu ly member
                 Member found = loginController.loginUser(new LoginDTO(email, password));
                 if (found == null) {
-                    loginView.displayErrorMessage("Sai email hoặc mật khẩu."); return;
+                    loginView.displayErrorMessage("Sai email hoặc mật khẩu."); 
+                    return;
                 }
                 if ("LOCKED".equalsIgnoreCase(found.getAccountStatus())) {
-                    loginView.displayErrorMessage("Tài khoản bị khóa. Liên hệ admin."); return;
+                    loginView.displayErrorMessage("Tài khoản bị khóa vì vi phạm tiêu chuẩn cộng đồng."); 
+                    return;
                 }
-                isAdmin = false; currentMember = found; showMainApp();
+                isAdmin = false; 
+                currentMember = found; 
+                showMainApp();
             }
             @Override
             public void onRegister(String name, String email, String password) {
                 boolean ok = loginController.registerUser(new UserDTO(name, email, password));
-                if (!ok) { loginView.displayErrorMessage("Email tồn tại hoặc mật khẩu < 6 ký tự."); return; }
+                if (!ok) { 
+                	loginView.displayErrorMessage("Email tồn tại hoặc mật khẩu < 6 ký tự."); 
+                	return; 
+                }
                 currentMember = loginController.loginUser(new LoginDTO(email, password));
                 isAdmin = false;
-                loginView.showMessage("✅ Đăng ký thành công!", Theme.SUCCESS);
-                Timer t = new Timer(900, e -> showMainApp()); t.setRepeats(false); t.start();
+                loginView.showMessage("Đăng ký thành công!", Theme.SUCCESS);
+                Timer t = new Timer(900, e -> showMainApp()); 
+                t.setRepeats(false); 
+                t.start();
             }
         });
         add(loginView, BorderLayout.CENTER);
-        revalidate(); repaint();
+        revalidate(); 
+        repaint();
     }
 
     // ════════════════════════════════════════════
@@ -142,9 +177,8 @@ public class MainFrame extends JFrame {
         setLayout(new BorderLayout(0, 0));
 
         String[] pages = isAdmin ? ADMIN_PAGES : USER_PAGES;
-        String[] icons = isAdmin ? ADMIN_ICONS : USER_ICONS;
 
-        sidebar = buildSidebar(pages, icons);
+        sidebar = buildSidebar(pages);
         add(sidebar, BorderLayout.WEST);
 
         cardLayout  = new CardLayout();
@@ -174,7 +208,7 @@ public class MainFrame extends JFrame {
             }
             @Override public void onRate(Movie movie, int stars) {
                 System.out.println("[App] Đánh giá phim '" + movie.getNameMovie() + "': " + stars + " sao");
-                movieView.displayMovieList(movieController.getAllMovies());
+//                movieView.displayMovieList(movieController.getAllMovies());
             }
         });
         movieView.displayMovieList(allMovies);
@@ -182,7 +216,7 @@ public class MainFrame extends JFrame {
 
         if (isAdmin) {
             // ── Admin Panel ──
-            AdminPanel adminPanel = new LoginView.AdminPanel();
+        	AdminPanel adminPanel = new LoginView.AdminPanel();
             adminPanel.loadMovies(allMovies);
             adminPanel.loadUsers(allUsers);
             adminPanel.setAdminListener(new LoginView.AdminPanel.AdminListener() {
@@ -224,12 +258,12 @@ public class MainFrame extends JFrame {
             paymentView.setPaymentListener((pkgIdx, method, paymentInfo) -> {
                 PaymentStrategy strategy;
                 if (method.equals("Momo")) {
-                    MomoPayment momo = new MomoPayment();
+                    MomoPayment momo = new MomoPayment(null);
                     momo.setPhoneNumber(paymentInfo);
                     strategy = momo;
                 } else {
                     String[] parts = paymentInfo.split("\\|");
-                    VisaPayment visa = new VisaPayment();
+                    VisaPayment visa = new VisaPayment("", "", "");
                     visa.setCardNumber(parts[0]);
                     visa.setExpiry(parts[1]);
                     visa.setCvv(parts[2]);
@@ -255,7 +289,7 @@ public class MainFrame extends JFrame {
     // ════════════════════════════════════════════
     //  SIDEBAR
     // ════════════════════════════════════════════
-    private JPanel buildSidebar(String[] pages, String[] icons) {
+    private JPanel buildSidebar(String[] pages) {
         JPanel sb = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -267,14 +301,15 @@ public class MainFrame extends JFrame {
         sb.setOpaque(false); sb.setLayout(new BoxLayout(sb, BoxLayout.Y_AXIS));
         sb.setPreferredSize(new Dimension(204, 0)); sb.setBorder(BorderFactory.createEmptyBorder(24,0,24,0));
 
-        JLabel brand = new JLabel("  🎬 CineStream");
+        JLabel brand = new JLabel("NLUChill");
         brand.setFont(Theme.fontBold(16)); brand.setForeground(Theme.TEXT_PRIMARY);
         brand.setAlignmentX(LEFT_ALIGNMENT);
         brand.setBorder(BorderFactory.createEmptyBorder(0, 20, isAdmin ? 6 : 20, 20));
+        brand.setForeground(Color.RED);
         sb.add(brand);
 
         if (isAdmin) {
-            JLabel badge = new JLabel("  🛠 Admin Mode");
+            JLabel badge = new JLabel("Admin Mode");
             badge.setFont(Theme.fontBold(11)); badge.setForeground(Theme.VIP);
             badge.setAlignmentX(LEFT_ALIGNMENT);
             badge.setBorder(BorderFactory.createEmptyBorder(0,20,16,20));
@@ -287,7 +322,7 @@ public class MainFrame extends JFrame {
 
         navBtns = new JButton[pages.length];
         for (int i = 0; i < pages.length; i++) {
-            navBtns[i] = createNavBtn(icons[i] + "  " + pages[i], pages[i]);
+            navBtns[i] = createNavBtn(pages[i], pages[i]);
             sb.add(navBtns[i]); sb.add(Box.createVerticalStrut(3));
         }
 
