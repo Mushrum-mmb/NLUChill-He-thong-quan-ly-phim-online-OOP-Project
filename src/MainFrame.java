@@ -221,37 +221,6 @@ public class MainFrame extends JFrame {
         	AdminView adminPanel = new AdminView();
             adminPanel.loadMovies(allMovies);
             adminPanel.loadUsers(allUsers);
-            adminPanel.setAdminListener(new AdminView.AdminListener() {
-                @Override public void onAddMovie(Movie m) {
-                    allMovies.add(m);
-                    movieController = new MovieController(allMovies);
-                    adminPanel.loadMovies(allMovies);
-                    movieView.displayMovieList(allMovies);
-                    showToast("✅ Đã thêm: " + m.getNameMovie());
-                }
-                @Override public void onDeleteMovie(Movie m) {
-                    allMovies.removeIf(x -> x.getId() == m.getId());
-                    movieController = new MovieController(allMovies);
-                    adminPanel.loadMovies(allMovies);
-                    movieView.displayMovieList(allMovies);
-                    showToast("🗑 Đã xóa phim.");
-                }
-                @Override public void onUpdateMovie(Movie m) {
-                    movieController = new MovieController(allMovies);
-                    adminPanel.loadMovies(allMovies);
-                    movieView.displayMovieList(allMovies);
-                    showToast("✏️ Đã cập nhật: " + m.getNameMovie());
-                }
-                @Override public void onLockAccount(User u) {
-                    showToast("🔒 Đã khóa: " + u.getEmail());
-                }
-                @Override public void onUnlockAccount(User u) {
-                    showToast("🔓 Đã mở khóa: " + u.getEmail());
-                }
-                @Override public void onWarnUser(User u, String reason) {
-                    showToast("⚠️ Đã cảnh báo: " + u.getEmail());
-                }
-            });
             mainContent.add(adminPanel, "Admin");
         } else {
             // ── Payment View ──
@@ -271,7 +240,7 @@ public class MainFrame extends JFrame {
                     visa.setCvv(parts[2]);
                     strategy = visa;
                 }
-                Payment p = paymentController.processVIPUpgrade(currentMember, pkgIdx, strategy);
+                Payment p = paymentController.processVIPUpgrade(currentMember, pkgIdx);
                 if (p != null) {
                     paymentView.updateMemberInfo(currentMember.getEmail(), currentMember.getAccountStatus());
                     paymentView.showPaymentSuccess();
