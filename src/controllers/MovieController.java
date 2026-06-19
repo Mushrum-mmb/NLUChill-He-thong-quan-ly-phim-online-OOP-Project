@@ -28,20 +28,19 @@ public class MovieController {
         }
         return results;
     }
-    // kiểm tra loại phim
+    // kiểm tra chay phim
     public boolean playMovie(int movieId, Member user) {
-        Movie movie = movieStore.stream()
-            .filter(m -> m.getId() == movieId)
-            .findFirst().orElse(null);
-        if (movie == null) { 
-        	System.out.println("Movie not found: " + movieId); 
-        	return false; 
-        	}
-        if (movie.isVip() && !"VIP".equalsIgnoreCase(user.getAccountStatus())) {
-            System.out.println("VIP required for: " + movie.getNameMovie());
-            return false;
+    	for (Movie movie : movieStore) {
+            if (movie.getId() == movieId) {
+                if (movie.isVip() && !("VIP".equalsIgnoreCase(user.getAccountStatus()))) {
+                    System.out.println("Mua gói Vip để xem " + movie.getNameMovie());
+                    return false;
+                }
+                movie.watchMovie();
+                return true;
+            }
         }
-        movie.watchMovie();
-        return true;
+        System.out.println("Movie not found: " + movieId);
+        return false;
     }
 }

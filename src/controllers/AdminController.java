@@ -35,28 +35,28 @@ public class AdminController {
     /** Thêm phim mới vào hệ thống. */
     public void addMovie(Movie movie) {
         if (movie == null) return;
-        boolean duplicateId = movieStore.stream()
-                .anyMatch(m -> m.getId() == movie.getId());
+        boolean duplicateId = false;
+        for (Movie m : movieStore) {
+            if (m.getId() == movie.getId()) {
+                duplicateId = true;
+                break;
+            }
+        }
         if (duplicateId) {
             // tránh trùng ID, tự cấp ID mới nếu cần
             movie.setId(nextMovieId());
         }
         movieStore.add(movie);
-        System.out.println("[AdminController] Đã thêm phim: " + movie.getNameMovie());
+        System.out.println("Đã thêm phim: " + movie.getNameMovie());
     }
 
-    /**
-     * Xóa phim theo vị trí (row) trong danh sách — tương ứng với dòng
-     * đang được chọn trên JTable ở AdminView, vì bảng phim được nạp
-     * theo đúng thứ tự của movieStore.
-     */
     public void deleteMovie(int row) {
         if (row < 0 || row >= movieStore.size()) {
-            System.out.println("[AdminController] Vị trí phim không hợp lệ: " + row);
+            System.out.println("Không có phim để xoá! ");
             return;
         }
         Movie removed = movieStore.remove(row);
-        System.out.println("[AdminController] Đã xóa phim: " + removed.getNameMovie());
+        System.out.println("Đã xóa phim: " + removed.getNameMovie());
     }
 
     /** Cập nhật thông tin phim (không có trong sơ đồ gốc nhưng cần cho onUpdateMovie). */
@@ -72,13 +72,16 @@ public class AdminController {
     }
 
     private int nextMovieId() {
-        return movieStore.stream().mapToInt(Movie::getId).max().orElse(0) + 1;
+        int maxId = 0;
+        for (Movie m : movieStore) {
+            maxId = Math.max(maxId, m.getId());
+        }
+        return maxId + 1;
     }
 
     // ════════════════════════════════════════════
     //  QUẢN LÝ NGƯỜI DÙNG
     // ════════════════════════════════════════════
-
     /** Trả về toàn bộ danh sách thành viên. */
     public List<Member> getAllMember() {
         return new ArrayList<>(memberStore);
@@ -88,7 +91,7 @@ public class AdminController {
     public void lockUser(Member user) {
         if (user == null) return;
         user.setAccountStatus("LOCKED");
-        System.out.println("[AdminController] Đã khóa tài khoản: " + user.getEmail());
+        System.out.println("Đã khóa tài khoản: " + user.getEmail());
     }
 
     /**
@@ -100,14 +103,14 @@ public class AdminController {
         Date expiredVIP = user.getExpiredVIP();
         boolean stillVip = expiredVIP != null && expiredVIP.after(new Date());
         user.setAccountStatus(stillVip ? "VIP" : "Regular");
-        System.out.println("[AdminController] Đã mở khóa tài khoản: " + user.getEmail());
+        System.out.println(" Đã mở khóa tài khoản: " + user.getEmail());
     }
 
     /** Gửi cảnh báo tới người dùng kèm theo lý do. */
     public void warnUser(Member user, String reason) {
         if (user == null) return;
         String msg = "[CẢNH BÁO] " + user.getEmail() + ": " + reason;
-        System.out.println("[AdminController] " + msg);
+        System.out.println( msg);
         if (user instanceof models.Observer) {
             ((models.Observer) user).update(msg);
         }

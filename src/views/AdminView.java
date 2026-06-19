@@ -36,6 +36,7 @@ import javax.swing.border.AbstractBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import controllers.AdminController;
 import models.Category;
 import models.Member;
 import models.Movie;
@@ -43,16 +44,7 @@ import models.User;
 
 public class AdminView extends JPanel {
 
-    public interface AdminListener {
-        void onAddMovie(Movie movie);
-        void onDeleteMovie(Movie movie);
-        void onUpdateMovie(Movie movie);
-        void onLockAccount(User user);
-        void onUnlockAccount(User user);
-        void onWarnUser(User user, String reason);
-    }
-
-    private AdminListener listener;
+    private AdminController controller;
     private DefaultTableModel movieTableModel;
     private DefaultTableModel userTableModel;
     private JTable movieTable;
@@ -64,34 +56,7 @@ public class AdminView extends JPanel {
     public AdminView() {
     	setBackground(Theme.BG_DARK); 
     	setLayout(new BorderLayout()); 
-    	buildUI(); 
     }
-
-    private void buildUI() {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(Theme.BG_DARK); 
-        header.setBorder(BorderFactory.createEmptyBorder(24,32,12,32));
-        JLabel title = new JLabel("Xin chào Admin");
-        title.setFont(Theme.fontBold(22)); 
-        title.setForeground(Theme.TEXT_PRIMARY);
-        JLabel sub = new JLabel("Quản lý phim và tài khoản người dùng");
-        sub.setFont(Theme.fontPlain(13)); 
-        sub.setForeground(Theme.TEXT_SECONDARY);
-        JPanel tBox = new JPanel(); 
-        tBox.setOpaque(false);
-        tBox.setLayout(new BoxLayout(tBox, BoxLayout.Y_AXIS));
-        tBox.add(title); 
-        tBox.add(Box.createVerticalStrut(3)); 
-        tBox.add(sub);
-        header.add(tBox, BorderLayout.WEST);
-        JPanel top = new JPanel(new BorderLayout()); 
-        top.setBackground(Theme.BG_DARK);
-        top.add(header, BorderLayout.NORTH); 
-        top.add(buildStats(), BorderLayout.CENTER);
-        add(top, BorderLayout.NORTH); 
-        add(buildTabs(), BorderLayout.CENTER);
-    }
-
     private JPanel buildStats() {
         JPanel row = new JPanel(new GridLayout(1,4,12,0));
         row.setBackground(Theme.BG_DARK); 
@@ -260,7 +225,7 @@ public class AdminView extends JPanel {
             		cntF.getText().trim(),
             		lnkF.getText().isEmpty()?"/videos/"+nF.getText().trim().toLowerCase().replace(" ","-"):lnkF.getText().trim(),
             				vip.isSelected());
-            if(listener!=null) listener.onAddMovie(m); d.dispose();
+            if(controller!=null) controller.addMovie(m); d.dispose();
         });
         form.add(title); 
         form.add(Box.createVerticalStrut(18));
@@ -353,7 +318,7 @@ public class AdminView extends JPanel {
             );
             target.setLink(lnkF.getText().trim()); 
             target.setVip(vip.isSelected());
-            if(listener!=null) listener.onUpdateMovie(target); 
+            if(controller!=null) controller.updateMovie(target); 
             d.dispose();
         });
         form.add(title); 
@@ -382,19 +347,29 @@ public class AdminView extends JPanel {
     }
 
     private void deleteSelectedMovie() {
-        int row=movieTable.getSelectedRow();
-        if(row<0){
-        	JOptionPane.showMessageDialog(this,"Vui lòng chọn phim cần xóa.","Chưa chọn",JOptionPane.WARNING_MESSAGE); 
-        	return;
+        int row = movieTable.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Vui lòng chọn phim cần xóa.",
+                    "Chưa chọn",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
         }
-        String name= (String) movieTableModel.getValueAt(row,1);
-        if(JOptionPane.showConfirmDialog(this,"Xóa phim: \""+name+"\"?","Xác nhận",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE)==JOptionPane.YES_OPTION){
-            Movie t=movies.stream().filter(
-            		m->m.getNameMovie().equals(name)).findFirst().orElse(null);
-            if(t!=null && listener!=null) listener.onDeleteMovie(t);
+        String name = (String) movieTableModel.getValueAt(row, 1);
+        int option = JOptionPane.showConfirmDialog(
+                this,
+                "Xóa phim: \"" + name + "\" ?",
+                "Xác nhận",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (option == JOptionPane.YES_OPTION && controller != null) {
+            controller.deleteMovie(row);
         }
     }
-
     private void warnSelectedUser() {
         int row=userTable.getSelectedRow();
         if(row<0){
@@ -402,8 +377,13 @@ public class AdminView extends JPanel {
         	return;
         }
         String email= (String) userTableModel.getValueAt(row,1);
-        Member target=users.stream().filter(
-        		u->u.getEmail().equals(email)).findFirst().orElse(null);
+        Member target = null;
+        for (Member u : users) {
+            if (u.getEmail().equals(email)) {
+                target = u;
+                break; // tìm thấy thì dừng
+            }
+        }
         if(target==null) return;
         String[] reasons={"Bình luận xúc phạm","Spam bình luận","Nội dung không phù hợp","Vi phạm cộng đồng"};
         String reason= (String) JOptionPane.showInputDialog(this,
@@ -414,7 +394,7 @@ public class AdminView extends JPanel {
         		reasons,
         		reasons[0]
         	);
-        if(reason!=null && listener!=null) listener.onWarnUser(target,reason);
+        if(reason!=null && controller!=null) controller.warnUser(target, reason);
     }
 
     private void toggleLock(boolean lock) {
@@ -428,9 +408,9 @@ public class AdminView extends JPanel {
         		u->u.getEmail().equals(email)).findFirst().orElse(null);
         if(t==null) return;
         t.setAccountStatus(lock?"LOCKED":"Regular");
-        if(listener!=null){
-        	if(lock)listener.onLockAccount(t); 
-        	else listener.onUnlockAccount(t);
+        if(controller!=null){
+        	if(lock)controller.lockUser(t);
+        	else controller.unlockUser(t);;
         }
         refreshUserTable();
     }
@@ -486,11 +466,6 @@ public class AdminView extends JPanel {
         		)
         );
     }
-
-    public void setAdminListener(AdminListener l) { 
-    	this.listener=l; 
-    }
-
     private JTable styledTable(DefaultTableModel model) {
         JTable t = new JTable(model){
             @Override public Component prepareRenderer(TableCellRenderer r,int row,int col){
