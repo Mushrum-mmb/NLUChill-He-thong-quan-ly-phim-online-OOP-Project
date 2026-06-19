@@ -40,6 +40,9 @@ public class MemberView extends JPanel {
     private MemberListener userListener;
     private Member       currentMember;
     private String       customName = "";
+    
+    // Khai báo biến đối tượng Controller (Instance) thay vì static
+    private MemberController memberController;
 
     // Các trường hiển thị thông tin
     private JLabel   avatarLabel;
@@ -56,7 +59,9 @@ public class MemberView extends JPanel {
     private JLabel         profileMsgLabel;
     private JLabel         passMsgLabel;
 
-    public MemberView() {
+    // SỬA: Constructor nhận thêm đối tượng memberController truyền vào
+    public MemberView(MemberController memberController) {
+        this.memberController = memberController;
         setBackground(Theme.BG_DARK);
         setLayout(new BorderLayout());
     }
@@ -121,7 +126,9 @@ public class MemberView extends JPanel {
         avatarLabel.setFont(new Font("SansSerif", Font.PLAIN, 64));
         avatarLabel.setAlignmentX(CENTER_ALIGNMENT);
 
-        nameDisplayLabel = new JLabel(currentMember.getEmail(), SwingConstants.CENTER);
+        // Khởi tạo ban đầu cho Tên hiển thị to ở trên dựa theo customName hoặc Email
+        String initialName = (customName != null && !customName.trim().isEmpty()) ? customName : currentMember.getEmail();
+        nameDisplayLabel = new JLabel(initialName, SwingConstants.CENTER);
         nameDisplayLabel.setFont(Theme.fontBold(17));
         nameDisplayLabel.setForeground(Theme.TEXT_PRIMARY);
         nameDisplayLabel.setAlignmentX(CENTER_ALIGNMENT);
@@ -204,13 +211,28 @@ public class MemberView extends JPanel {
         JButton saveBtn = colorBtn("Lưu thay đổi", new Color(59, 130, 246));
         saveBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         saveBtn.setAlignmentX(LEFT_ALIGNMENT);
+        
+        // FIX: Sửa lại Listener gọi instance memberController và đồng bộ giao diện ngay lập tức
         saveBtn.addActionListener(e -> {
             String newName = nameEditField.getText().trim();
             String newEmail = emailEditField.getText().trim();
-            if (!newName.isEmpty()) {
-                this.customName = newName; // Lưu ngay tại View
+
+            String resultMsg = memberController.updateProfile(currentMember, newName, newEmail);
+
+            if (resultMsg.equals("Cập nhật thông tin thành công!")) {
+                if (!newName.isEmpty()) {
+                    this.customName = newName; // Cập nhật biến tạm ngay khi hợp lệ
+                }
+                this.setProfileMsg(resultMsg, Theme.SUCCESS);
+                this.refreshDisplay(); // Ép giao diện vẽ lại theo biến tạm mới gán
+                this.clearProfileEditFields();
+
+                if (userListener != null) {
+                    userListener.onUpdateProfile(currentMember, newName, newEmail);
+                }
+            } else {
+                this.setProfileMsg(resultMsg, Theme.ERROR);
             }
-            MemberController.handleUpdateProfile(this, currentMember, newName, newEmail);
         });
 
         card.add(title);
@@ -251,11 +273,25 @@ public class MemberView extends JPanel {
         JButton changeBtn = colorBtn("Đổi mật khẩu", new Color(59, 130, 246));
         changeBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         changeBtn.setAlignmentX(LEFT_ALIGNMENT);
+        
+        // FIX: Sửa lại Listener gọi instance memberController để đổi mật khẩu
         changeBtn.addActionListener(e -> {
             String oldPass = new String(oldPassField.getPassword());
             String newPass = new String(newPassField.getPassword());
             String confirm = new String(confirmPassField.getPassword());
-            MemberController.handleChangePassword(this, currentMember, oldPass, newPass, confirm);
+            
+            String resultMsg = memberController.changePassword(currentMember, oldPass, newPass, confirm);
+
+            if (resultMsg.equals("Đổi mật khẩu thành công!")) {
+                this.setPassMsg(resultMsg, Theme.SUCCESS);
+                this.clearPasswordFields();
+
+                if (userListener != null) {
+                    userListener.onChangePassword(currentMember, oldPass, newPass);
+                }
+            } else {
+                this.setPassMsg(resultMsg, Theme.ERROR);
+            }
         });
 
         card.add(title);
@@ -309,7 +345,23 @@ public class MemberView extends JPanel {
         JButton deleteBtn = colorBtn("Xóa tài khoản của tôi", Theme.ERROR);
         deleteBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         deleteBtn.setAlignmentX(LEFT_ALIGNMENT);
-        deleteBtn.addActionListener(e -> MemberController.handleDeleteAccount(this, currentMember));
+        
+        // FIX: Tự hiển thị dialog xác nhận tại View, sau đó gọi instance memberController xử lý xóa
+        deleteBtn.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Bạn chắc chắn muốn xóa tài khoản?\nEmail: " + currentMember.getEmail() + "\nHành động này KHÔNG THỂ hoàn tác!",
+                "⚠️ Xác nhận xóa tài khoản",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+            if (confirm == JOptionPane.YES_OPTION) {
+                memberController.deleteAccount(currentMember);
+                if (userListener != null) {
+                    userListener.onDeleteAccount(currentMember);
+                }
+            }
+        });
 
         card.add(title);
         card.add(Box.createVerticalStrut(10));
@@ -322,7 +374,6 @@ public class MemberView extends JPanel {
     // ══════════════════════════════════════════
     //  XỬ LÝ SỰ KIỆN
     // ══════════════════════════════════════════
-    // Thêm các hàm hỗ trợ hiển thị lỗi
     public void setProfileMsg(String msg, Color color) {
         profileMsgLabel.setText(msg); 
         profileMsgLabel.setForeground(color);
@@ -348,19 +399,27 @@ public class MemberView extends JPanel {
         return this.userListener;
     }
     
-    // ── Cập nhật hiển thị sau thay đổi từ bên ngoài ──
+    // FIX: Sửa lại hàm refreshDisplay() ăn theo biến tạm customName chuẩn chỉnh
     public void refreshDisplay() {
     	if (currentMember == null) return;
+        
+        // 1. Cập nhật lại Email dòng nhỏ phía dưới
         emailDisplayLabel.setText(currentMember.getEmail());
         
-        if (!customName.isEmpty()) {
+        // 2. Cập nhật lại Tên chữ to phía trên dựa theo biến tạm
+        if (customName != null && !customName.trim().isEmpty()) {
             nameDisplayLabel.setText(customName);
         } else {
             nameDisplayLabel.setText(currentMember.getEmail());
         }
+        
+        // 3. Cập nhật lại nhãn trạng thái tài khoản
         String status = currentMember.getAccountStatus();
         statusDisplayLabel.setText(status);
         statusDisplayLabel.setForeground("VIP".equalsIgnoreCase(status) ? Theme.VIP : Theme.ACCENT);
+        
+        // 4. Đồng bộ và vẽ lại giao diện Swing ngay lập tức
+        revalidate();
         repaint();
     }
 
@@ -497,5 +556,4 @@ public class MemberView extends JPanel {
         b.setBorder(BorderFactory.createEmptyBorder(10,16,10,16));
         b.setFocusPainted(false); 
         return b;
-    }
-}
+    }}
