@@ -1,3 +1,4 @@
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -30,6 +31,7 @@ import controllers.LoginController;
 import controllers.LoginDTO;
 import controllers.MovieController;
 import controllers.PaymentController;
+import controllers.MemberController; // THÊM IMPORT CONTROLLER MỚI
 import controllers.UserDTO;
 import models.Category;
 import models.Member;
@@ -58,15 +60,21 @@ public class MainFrame extends JFrame {
     private LoginView   loginView;
     private MovieView   movieView;
     private PaymentView paymentView;
+    private MemberView memberView;
+    
 //	controllers
     private LoginController   loginController;
     private MovieController   movieController;
     private PaymentController paymentController;
+    private MemberController  memberController; // THÊM: Quản lý MemberController dưới dạng Instance
 
     private Member       currentMember;
     private boolean      isAdmin = false;
     private List<Movie>  allMovies;
     private List<Member> allUsers;
+    
+    // THÊM: Giữ tham chiếu nhãn email sidebar để tự động cập nhật khi user sửa profile
+    private JLabel       sidebarUserLbl; 
     
     private static final String[] USER_PAGES  = {"Movies", "VIP",   "Profile"};
     private static final String[] ADMIN_PAGES = {"Movies", "Admin", "Profile"};
@@ -117,6 +125,7 @@ public class MainFrame extends JFrame {
         loginController   = new LoginController(allUsers);
         movieController   = new MovieController(allMovies);
         paymentController = new PaymentController();
+        memberController  = new MemberController(allUsers); // SỬA: Khởi tạo thực thể MemberController và truyền kho lưu trữ
         currentMember     = allUsers.get(0);
     }
 
@@ -201,7 +210,6 @@ public class MainFrame extends JFrame {
                         "Yêu cầu VIP", JOptionPane.YES_NO_OPTION);
                     if (opt == JOptionPane.YES_OPTION) switchPage(isAdmin ? "Admin" : "VIP");
                 } else {
-                    // Mở dialog xem phim với rating + comment
                     movieView.showPlayer(movie, true);
                 }
             }
@@ -210,7 +218,6 @@ public class MainFrame extends JFrame {
             }
             @Override public void onRate(Movie movie, int stars) {
                 System.out.println("[App] Đánh giá phim '" + movie.getNameMovie() + "': " + stars + " sao");
-//                movieView.displayMovieList(movieController.getAllMovies());
             }
         });
         movieView.displayMovieList(allMovies);
@@ -244,6 +251,10 @@ public class MainFrame extends JFrame {
                 if (p != null) {
                     paymentView.updateMemberInfo(currentMember.getEmail(), currentMember.getAccountStatus());
                     paymentView.showPaymentSuccess();
+                    // FIX thêm: Cập nhật lại giao diện trang cá nhân và sidebar nếu người dùng vừa mua VIP thành công
+                    if (sidebarUserLbl != null) {
+                        switchPage("Movies"); // Trả về trang chính
+                    }
                 } else {
                     paymentView.showPaymentError();
                 }
@@ -299,10 +310,11 @@ public class MainFrame extends JFrame {
 
         sb.add(Box.createVerticalGlue());
 
-        JLabel userLbl = new JLabel("  " + currentMember.getEmail());
-        userLbl.setFont(Theme.fontPlain(11)); userLbl.setForeground(Theme.TEXT_MUTED);
-        userLbl.setBorder(BorderFactory.createEmptyBorder(0,20,10,20));
-        sb.add(userLbl);
+        // FIX: Gán nhãn email vào thuộc tính toàn cục sidebarUserLbl để có thể cập nhật động về sau
+        sidebarUserLbl = new JLabel("  " + currentMember.getEmail());
+        sidebarUserLbl.setFont(Theme.fontPlain(11)); sidebarUserLbl.setForeground(Theme.TEXT_MUTED);
+        sidebarUserLbl.setBorder(BorderFactory.createEmptyBorder(0,20,10,20));
+        sb.add(sidebarUserLbl);
 
         JButton logout = createNavBtn("🚪  Đăng xuất", null);
         logout.addActionListener(e -> buildLoginScreen());
@@ -344,13 +356,15 @@ public class MainFrame extends JFrame {
             navBtns[i].setForeground(sel ? Theme.TEXT_PRIMARY : Theme.TEXT_SECONDARY);
             navBtns[i].repaint();
         }
+        // Thêm bổ sung: Mỗi lần người dùng click mở tab Profile, ta chủ động làm mới UI của tab đó
+        if ("Profile".equals(page) && memberView != null) {
+            memberView.refreshDisplay();
+        }
     }
 
     // ════════════════════════════════════════════
     //  PROFILE PANEL
     // ════════════════════════════════════════════
-    private MemberView memberView; // giữ tham chiếu để refresh sau thay đổi
-
     private JPanel buildProfilePanel() {
         // Admin: hiển thị card đơn giản (chỉ xem, không chỉnh sửa)
         if (isAdmin) {
@@ -381,15 +395,20 @@ public class MainFrame extends JFrame {
             wrap.add(card); return wrap;
         }
 
-       //cập nhật, đổi mật khẩu, xóa tài khoản
-        MemberView memView = new MemberView();
-        memView.loadMember(currentMember);
-        memView.setUserListener(new MemberView.MemberListener() {
+       // Cập nhật, đổi mật khẩu, xóa tài khoản người dùng thông thường
+        // SỬA: Truyền thực thể `memberController` vào Constructor của MemberView theo cấu trúc mới
+        memberView = new MemberView(memberController); 
+        memberView.loadMember(currentMember);
+        memberView.setUserListener(new MemberView.MemberListener() {
 
             @Override
             public void onUpdateProfile(Member member, String newName, String newEmail) {
-                // Cập nhật sidebar email hiển thị
-                revalidate(); repaint();
+                // FIX: Đồng bộ cập nhật ngay email hiển thị ở góc trái phía dưới thanh Sidebar
+                if (sidebarUserLbl != null) {
+                    sidebarUserLbl.setText("  " + member.getEmail());
+                }
+                revalidate(); 
+                repaint();
                 showToast("✅ Cập nhật thông tin thành công!");
             }
 
@@ -400,15 +419,16 @@ public class MainFrame extends JFrame {
 
             @Override
             public void onDeleteAccount(Member member) {
-                // Xóa khỏi danh sách users
+                // Xóa khỏi danh sách lưu trữ users thông qua thực thể
                 allUsers.removeIf(u -> u.getId() == member.getId());
                 showToast("🗑 Tài khoản đã được xóa.");
-                // Tự động đăng xuất sau 1.5 giây
+                // Tự động đăng xuất về màn hình Login sau 1.5 giây
                 Timer t = new Timer(1500, e -> buildLoginScreen());
-                t.setRepeats(false); t.start();
+                t.setRepeats(false); 
+                t.start();
             }
         });
-        return memView;
+        return memberView;
     }
 
     // ── Toast notification ──
@@ -424,5 +444,4 @@ public class MainFrame extends JFrame {
         toast.setLocation(loc.x+(getWidth()-toast.getWidth())/2, loc.y+getHeight()-70);
         toast.setVisible(true);
         Timer t = new Timer(2200, e -> toast.dispose()); t.setRepeats(false); t.start();
-    }
-}
+    }}
