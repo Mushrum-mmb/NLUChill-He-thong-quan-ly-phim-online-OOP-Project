@@ -68,6 +68,7 @@ public class MainFrame extends JFrame {
 	private MemberView memberView;
 
 //	controllers
+    private AdminController adminController;
 	private LoginController   loginController;
 	private MovieController   movieController;
 	private PaymentController paymentController;
@@ -129,6 +130,7 @@ public class MainFrame extends JFrame {
 		    allMovies.get(0).unRegister(allUsers.get(0));
 	
 		    // 5. Khởi tạo các Controller
+		    adminController = 	new AdminController(allMovies,allUsers);
 		    loginController   = new LoginController(allUsers);
 		    movieController   = new MovieController(allMovies);
 		    paymentController = new PaymentController();
@@ -237,33 +239,36 @@ public class MainFrame extends JFrame {
 	        adminPanel.loadMovies(allMovies);
 	        adminPanel.loadUsers(allUsers);
 	        adminPanel.setAdminListener(new AdminView.AdminListener() {
-	            @Override public void onAddMovie(Movie m) {
-	                allMovies.add(m);
-	                movieController = new MovieController(allMovies);
-	                adminPanel.loadMovies(allMovies);
+				@Override public void onAddMovie(Movie m) {
+	                adminController.addMovie(m);               // ← gọi Controller
+	                adminPanel.loadMovies(allMovies);          // View sync lại
 	                movieView.displayMovieList(allMovies);
 	                showToast("✅ Đã thêm: " + m.getNameMovie());
 	            }
 	            @Override public void onDeleteMovie(Movie m) {
-	                allMovies.removeIf(x -> x.getId() == m.getId());
-	                movieController = new MovieController(allMovies);
-	                adminPanel.loadMovies(allMovies);
-	                movieView.displayMovieList(allMovies);
-	                showToast("🗑 Đã xóa phim.");
+	            	  adminController.deleteMovie(allMovies.indexOf(m));
+	            	  adminPanel.loadMovies(allMovies);
+	            	  movieView.displayMovieList(allMovies);
+	            	  showToast("🗑 Đã xóa phim.");
 	            }
 	            @Override public void onUpdateMovie(Movie m) {
-	                movieController = new MovieController(allMovies);
+	            	adminController.updateMovie(m);
 	                adminPanel.loadMovies(allMovies);
 	                movieView.displayMovieList(allMovies);
 	                showToast("✏️ Đã cập nhật: " + m.getNameMovie());
 	            }
 	            @Override public void onLockAccount(User u) {
+	            	 adminController.lockUser((Member) u);
+	                 adminPanel.loadUsers(allUsers);
 	                showToast("🔒 Đã khóa: " + u.getEmail());
 	            }
 	            @Override public void onUnlockAccount(User u) {
+	            	adminController.unlockUser((Member) u);
+	                adminPanel.loadUsers(allUsers);
 	                showToast("🔓 Đã mở khóa: " + u.getEmail());
 	            }
 	            @Override public void onWarnUser(User u, String reason) {
+	            	adminController.warnUser((Member) u, reason);
 	                showToast("⚠️ Đã cảnh báo: " + u.getEmail());
 	            }
 	        });
