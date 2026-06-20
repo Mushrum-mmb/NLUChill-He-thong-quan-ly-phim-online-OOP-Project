@@ -4,6 +4,7 @@ package views;
 import javax.swing.*;
 import javax.swing.border.*;
 
+import controllers.MovieController;
 import models.Movie;
 
 import java.awt.*;
@@ -23,8 +24,20 @@ public class MovieView extends JPanel {
         void onComment(Movie movie, String content);
         void onRate(Movie movie, int stars);
     }
+    private MovieController movieController;
     // khởi tạo panels và components trong movie
     private MovieListener movieListener;
+    //thuoc tinh builMovieCard
+    private JPanel card;
+    private JPanel thumb;
+    private JPanel info;
+    private JLabel name;
+    private JLabel dir;
+    private JLabel commentCount;
+    private JPanel tags;
+    private JButton watchBtn;
+    
+    //thuoc tinh build UI 
     private JPanel header;
     private JLabel title;
     private JPanel searchBar;
@@ -56,6 +69,148 @@ public class MovieView extends JPanel {
         movieGrid.repaint();
     }
 
+    private JPanel buildMovieCard(Movie movie) {
+        //card chứa phim
+    	card = new JPanel() {
+            boolean hover=false;
+            { addMouseListener(new MouseAdapter(){
+                public void mouseEntered(MouseEvent e){
+                	hover=true;  
+                	repaint();
+                }
+                public void mouseExited(MouseEvent e) {
+                	hover=false; 
+                	repaint();
+                }
+                public void mouseClicked(MouseEvent e){
+                	if(movieListener!=null) movieListener.onWatch(movie);
+                }
+            }); }
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(hover?Theme.BG_HOVER:Theme.BG_CARD);
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),14,14);
+                g2.setColor(Theme.BORDER); 
+                g2.drawRoundRect(0,0,getWidth()-1,getHeight()-1,14,14);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false); 
+        card.setLayout(new BorderLayout());
+        card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        //thumbnail
+        thumb = new JPanel(){
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2=(Graphics2D)g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(0,0,Theme.ACCENT_DARK,0,getHeight(),new Color(10,12,20));
+                g2.setPaint(gp); 
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),14,0);
+                g2.setFont(new Font("SansSerif",Font.PLAIN,36));
+                FontMetrics fm=g2.getFontMetrics(); 
+                String ic = movie.isVip()?"👑":"🎥";
+                g2.drawString(ic,(getWidth()-fm.stringWidth(ic))/2,getHeight()/2+12);
+                // Hiển thị rating nếu có
+                int r = ratingMap.getOrDefault(movie.getId(),0);
+                if (r>0) {
+                    g2.setColor(Theme.VIP); 
+                    g2.setFont(Theme.fontBold(12));
+                    StringBuilder sb = new StringBuilder();
+                    for(int i=0;i<r;i++) sb.append("★");
+                    g2.drawString(sb.toString(),8,getHeight()-8);
+                }
+                g2.dispose();
+            }
+        };
+        thumb.setOpaque(false); 
+        thumb.setPreferredSize(new Dimension(0,130));
+
+        info = new JPanel();
+        info.setOpaque(false); 
+        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
+        info.setBorder(BorderFactory.createEmptyBorder(10,14,14,14));
+
+        name = new JLabel(movie.getNameMovie());
+        name.setFont(Theme.fontBold(13)); 
+        name.setForeground(Theme.TEXT_PRIMARY);
+
+        dir = new JLabel("Dir: " + movie.getDirector());
+        dir.setFont(Theme.fontPlain(11)); 
+        dir.setForeground(Theme.TEXT_SECONDARY);
+
+        // Số bình luận
+        int cCount = commentMap.getOrDefault(movie.getId(), Collections.emptyList()).size();
+        commentCount = new JLabel("💬 " + cCount + " bình luận");
+        commentCount.setFont(Theme.fontPlain(10)); 
+        commentCount.setForeground(Theme.TEXT_MUTED);
+
+        tags = new JPanel(new FlowLayout(FlowLayout.LEFT,4,0));
+        tags.setOpaque(false);
+        if (movie.getCategory()!=null) { 
+        	tags.add(makeTag(movie.getCategory().getCategory(),Theme.BG_HOVER,Theme.TEXT_SECONDARY));
+        }
+        if (movie.isVip()) {
+        	tags.add(makeTag("VIP",new Color(92,67,10),Theme.VIP));
+        }
+
+        watchBtn = accentBtn("▶  Xem", Color.BLACK);
+        watchBtn.setMaximumSize(new Dimension(90,28)); watchBtn.setAlignmentX(LEFT_ALIGNMENT);
+        watchBtn.addActionListener(e->{if(movieListener!=null)movieListener.onWatch(movie);});
+
+        info.add(name); 
+        info.add(Box.createVerticalStrut(3));
+        info.add(dir);  
+        info.add(Box.createVerticalStrut(3));
+        info.add(commentCount); 
+        info.add(Box.createVerticalStrut(6));
+        info.add(tags); 
+        info.add(Box.createVerticalStrut(8)); 
+        info.add(watchBtn);
+
+        card.add(thumb,BorderLayout.NORTH); 
+        card.add(info,BorderLayout.CENTER);
+        return card;
+    }
+
+    private JLabel makeTag(String text, Color bg, Color fg) {
+        JLabel t = new JLabel(text) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2=(Graphics2D)g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(bg); 
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),6,6);
+                g2.dispose(); 
+                super.paintComponent(g);
+            }
+        };
+        t.setFont(Theme.fontBold(10)); 
+        t.setForeground(fg); 
+        t.setOpaque(false);
+        t.setBorder(BorderFactory.createEmptyBorder(3,7,3,7)); 
+        return t;
+    }
+
+    private JButton accentBtn(String text, Color color) {
+        JButton b = new JButton(text){
+            @Override protected void paintComponent(Graphics g){
+                Graphics2D g2=(Graphics2D)g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isRollover()?color.brighter():color);
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),8,8);
+                g2.dispose(); 
+                super.paintComponent(g);
+            }
+        };
+        b.setFont(Theme.fontBold(11)); 
+        b.setForeground(Color.WHITE);
+        b.setContentAreaFilled(false); 
+        b.setBorderPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); 
+        b.setFocusPainted(false);
+        return b;
+    }
+    
     /** Mở dialog xem phim với video player + đánh giá + bình luận */
     public void showPlayer(Movie movie, boolean isMember) {
         JDialog dialog = new JDialog(
@@ -75,8 +230,10 @@ public class MovieView extends JPanel {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 GradientPaint gp = new GradientPaint(0,0,Theme.ACCENT_DARK,0,getHeight(),Theme.BG_DARK);
-                g2.setPaint(gp); g2.fillRoundRect(0,0,getWidth(),getHeight(),12,12);
-                g2.setColor(Color.WHITE); g2.setFont(new Font("SansSerif",Font.PLAIN,48));
+                g2.setPaint(gp); 
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),12,12);
+                g2.setColor(Color.WHITE); 
+                g2.setFont(new Font("SansSerif",Font.PLAIN,48));
                 FontMetrics fm = g2.getFontMetrics();
                 g2.drawString("▶",(getWidth()-fm.stringWidth("▶"))/2, getHeight()/2+16);
                 g2.setFont(Theme.fontBold(13));
@@ -92,8 +249,10 @@ public class MovieView extends JPanel {
         for (String ic : new String[]{"⏮","⏪","⏸","⏩","⏭"}) {
             JButton b = new JButton(ic);
             b.setFont(new Font("SansSerif",Font.PLAIN,16));
-            b.setForeground(Theme.TEXT_PRIMARY); b.setBackground(Theme.BG_CARD);
-            b.setBorder(BorderFactory.createEmptyBorder(6,12,6,12)); b.setFocusPainted(false);
+            b.setForeground(Theme.TEXT_PRIMARY); 
+            b.setBackground(Theme.BG_CARD);
+            b.setBorder(BorderFactory.createEmptyBorder(6,12,6,12)); 
+            b.setFocusPainted(false);
             ctrl.add(b);
         }
 
@@ -108,8 +267,9 @@ public class MovieView extends JPanel {
         reviewSection.setLayout(new BoxLayout(reviewSection, BoxLayout.Y_AXIS));
 
         // Tiêu đề đánh giá
-        JLabel ratingTitle = new JLabel("⭐  Đánh giá của bạn");
-        ratingTitle.setFont(Theme.fontBold(14)); ratingTitle.setForeground(Theme.TEXT_PRIMARY);
+        JLabel ratingTitle = new JLabel("Đánh giá của bạn");
+        ratingTitle.setFont(Theme.fontBold(14)); 
+        ratingTitle.setForeground(Theme.TEXT_PRIMARY);
         ratingTitle.setAlignmentX(LEFT_ALIGNMENT);
 
         // Chọn sao
@@ -138,11 +298,13 @@ public class MovieView extends JPanel {
 
         // Phân cách
         JSeparator sep1 = new JSeparator();
-        sep1.setForeground(Theme.BORDER); sep1.setMaximumSize(new Dimension(Integer.MAX_VALUE,1));
+        sep1.setForeground(Theme.BORDER); 
+        sep1.setMaximumSize(new Dimension(Integer.MAX_VALUE,1));
 
         // Tiêu đề bình luận
         JLabel commentTitle = new JLabel("💬  Bình luận");
-        commentTitle.setFont(Theme.fontBold(14)); commentTitle.setForeground(Theme.TEXT_PRIMARY);
+        commentTitle.setFont(Theme.fontBold(14)); 
+        commentTitle.setForeground(Theme.TEXT_PRIMARY);
         commentTitle.setAlignmentX(LEFT_ALIGNMENT);
 
         // Danh sách bình luận hiện có
@@ -181,8 +343,10 @@ public class MovieView extends JPanel {
                 }
             }
         };
-        commentInput.setOpaque(false); commentInput.setFont(Theme.fontPlain(13));
-        commentInput.setForeground(Theme.TEXT_PRIMARY); commentInput.setCaretColor(Theme.ACCENT);
+        commentInput.setOpaque(false); 
+        commentInput.setFont(Theme.fontPlain(13));
+        commentInput.setForeground(Theme.TEXT_PRIMARY); 
+        commentInput.setCaretColor(Theme.ACCENT);
         commentInput.setBorder(BorderFactory.createCompoundBorder(
             new RoundBorder(Theme.BORDER,8),
             BorderFactory.createEmptyBorder(8,10,8,10)));
@@ -200,8 +364,10 @@ public class MovieView extends JPanel {
                 g2.dispose(); super.paintComponent(g);
             }
         };
-        sendBtn.setFont(Theme.fontBold(12)); sendBtn.setForeground(Color.BLACK);
-        sendBtn.setContentAreaFilled(false); sendBtn.setBorderPainted(false);
+        sendBtn.setFont(Theme.fontBold(12)); 
+        sendBtn.setForeground(Color.BLACK);
+        sendBtn.setContentAreaFilled(false); 
+        sendBtn.setBorderPainted(false);
         sendBtn.setPreferredSize(new Dimension(64, 40));
         sendBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         sendBtn.setFocusPainted(false);
@@ -239,7 +405,7 @@ public class MovieView extends JPanel {
         dialog.add(root);
         dialog.setVisible(true);
     }
-
+    
     private void addCommentRow(JPanel list, String text) {
         JPanel row = new JPanel(new BorderLayout(8, 0));
         row.setBackground(Theme.BG_CARD);
@@ -251,7 +417,8 @@ public class MovieView extends JPanel {
         JLabel avatar = new JLabel("👤");
         avatar.setFont(Theme.fontPlain(14));
         JLabel content = new JLabel(text);
-        content.setFont(Theme.fontPlain(13)); content.setForeground(Theme.TEXT_PRIMARY);
+        content.setFont(Theme.fontPlain(13)); 
+        content.setForeground(Theme.TEXT_PRIMARY);
 
         row.add(avatar, BorderLayout.WEST);
         row.add(content, BorderLayout.CENTER);
@@ -262,8 +429,7 @@ public class MovieView extends JPanel {
         wrapper.add(row);
         list.add(wrapper);
     }
-
-    // ── Build UI ──
+ // ── Build UI ──
     private void buildUI() {
     	this.setBackground(Theme.BG_DARK);
         this.setLayout(new BorderLayout());
@@ -347,118 +513,16 @@ public class MovieView extends JPanel {
         this.add(sp, BorderLayout.CENTER);
     }
     //sự kiện doSearch khi tìm kiếm
-    private void doSearch() { 
-    	if (movieListener!=null) movieListener.onSearch(searchField.getText().trim()); 
+    private void doSearch() {  
+		String kw = searchField.getText().trim();
+		List<Movie> r = movieController.searchMovie(kw);
+		this.displayMovieList(r);
     }
-
-    private JPanel buildMovieCard(Movie movie) {
-        JPanel card = new JPanel() {
-            boolean hover=false;
-            { addMouseListener(new MouseAdapter(){
-                public void mouseEntered(MouseEvent e){hover=true;  repaint();}
-                public void mouseExited(MouseEvent e) {hover=false; repaint();}
-                public void mouseClicked(MouseEvent e){if(movieListener!=null) movieListener.onWatch(movie);}
-            }); }
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(hover?Theme.BG_HOVER:Theme.BG_CARD);
-                g2.fillRoundRect(0,0,getWidth(),getHeight(),14,14);
-                g2.setColor(Theme.BORDER); g2.drawRoundRect(0,0,getWidth()-1,getHeight()-1,14,14);
-                g2.dispose();
-            }
-        };
-        card.setOpaque(false); card.setLayout(new BorderLayout());
-        card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        JPanel thumb = new JPanel(){
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2=(Graphics2D)g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint gp=new GradientPaint(0,0,Theme.ACCENT_DARK,0,getHeight(),new Color(10,12,20));
-                g2.setPaint(gp); g2.fillRoundRect(0,0,getWidth(),getHeight(),14,0);
-                g2.setFont(new Font("SansSerif",Font.PLAIN,36));
-                FontMetrics fm=g2.getFontMetrics(); String ic=movie.isVip()?"👑":"🎥";
-                g2.drawString(ic,(getWidth()-fm.stringWidth(ic))/2,getHeight()/2+12);
-                // Hiển thị rating nếu có
-                int r = ratingMap.getOrDefault(movie.getId(),0);
-                if (r>0) {
-                    g2.setColor(Theme.VIP); g2.setFont(Theme.fontBold(12));
-                    StringBuilder sb=new StringBuilder();
-                    for(int i=0;i<r;i++) sb.append("★");
-                    g2.drawString(sb.toString(),8,getHeight()-8);
-                }
-                g2.dispose();
-            }
-        };
-        thumb.setOpaque(false); thumb.setPreferredSize(new Dimension(0,130));
-
-        JPanel info = new JPanel();
-        info.setOpaque(false); info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.setBorder(BorderFactory.createEmptyBorder(10,14,14,14));
-
-        JLabel name = new JLabel(movie.getNameMovie());
-        name.setFont(Theme.fontBold(13)); name.setForeground(Theme.TEXT_PRIMARY);
-
-        JLabel dir = new JLabel("Dir: " + movie.getDirector());
-        dir.setFont(Theme.fontPlain(11)); dir.setForeground(Theme.TEXT_SECONDARY);
-
-        // Số bình luận
-        int cCount = commentMap.getOrDefault(movie.getId(), Collections.emptyList()).size();
-        JLabel commentCount = new JLabel("💬 " + cCount + " bình luận");
-        commentCount.setFont(Theme.fontPlain(10)); commentCount.setForeground(Theme.TEXT_MUTED);
-
-        JPanel tags = new JPanel(new FlowLayout(FlowLayout.LEFT,4,0));
-        tags.setOpaque(false);
-        if (movie.getCategory()!=null) tags.add(makeTag(movie.getCategory().getCategory(),Theme.BG_HOVER,Theme.TEXT_SECONDARY));
-        if (movie.isVip())             tags.add(makeTag("VIP",new Color(92,67,10),Theme.VIP));
-
-        JButton watchBtn = accentBtn("▶  Xem", Color.BLACK);
-        watchBtn.setMaximumSize(new Dimension(90,28)); watchBtn.setAlignmentX(LEFT_ALIGNMENT);
-        watchBtn.addActionListener(e->{if(movieListener!=null)movieListener.onWatch(movie);});
-
-        info.add(name); info.add(Box.createVerticalStrut(3));
-        info.add(dir);  info.add(Box.createVerticalStrut(3));
-        info.add(commentCount); info.add(Box.createVerticalStrut(6));
-        info.add(tags); info.add(Box.createVerticalStrut(8)); info.add(watchBtn);
-
-        card.add(thumb,BorderLayout.NORTH); card.add(info,BorderLayout.CENTER);
-        return card;
-    }
-
-    private JLabel makeTag(String text, Color bg, Color fg) {
-        JLabel t = new JLabel(text) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2=(Graphics2D)g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(bg); g2.fillRoundRect(0,0,getWidth(),getHeight(),6,6);
-                g2.dispose(); super.paintComponent(g);
-            }
-        };
-        t.setFont(Theme.fontBold(10)); t.setForeground(fg); t.setOpaque(false);
-        t.setBorder(BorderFactory.createEmptyBorder(3,7,3,7)); return t;
-    }
-
-    private JButton accentBtn(String text, Color color) {
-        JButton b = new JButton(text){
-            @Override protected void paintComponent(Graphics g){
-                Graphics2D g2=(Graphics2D)g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(getModel().isRollover()?color.brighter():color);
-                g2.fillRoundRect(0,0,getWidth(),getHeight(),8,8);
-                g2.dispose(); super.paintComponent(g);
-            }
-        };
-        b.setFont(Theme.fontBold(11)); b.setForeground(Color.WHITE);
-        b.setContentAreaFilled(false); b.setBorderPainted(false);
-        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)); b.setFocusPainted(false);
-        return b;
-    }
-
     public void setMovieListener(MovieListener l) { 
     	this.movieListener = l; 
     }
-    public MovieView() {
-        buildUI();
+    public MovieView(MovieController movieController) {
+        this.movieController = movieController;
+    	buildUI();
     }
 }

@@ -14,21 +14,21 @@ public class MovieController {
         this.movieStore = movieStore;
     }
     // tìm kiếm phim
-    public List<Movie> searchMovie(String keyword) {
-        List<Movie> results = new ArrayList<>();
-        if (keyword == null || keyword.isEmpty()) 
-        	return new ArrayList<>(movieStore);
-        String kw = keyword.toLowerCase();
-        for (Movie m : movieStore) {
-            if (m.getNameMovie().toLowerCase().contains(kw)
-             || m.getDirector().toLowerCase().contains(kw)
-             || m.getActor().toLowerCase().contains(kw)) {
-                results.add(m);
-            }
-        }
-        return results;
+    public List<Movie> searchMovie(String keyword){
+    	List<Movie> r = new ArrayList<>();
+    	if(keyword == null || keyword.isEmpty()) {
+    		return new ArrayList<>(movieStore);
+    	}
+    	String kw = keyword.toLowerCase();
+    	for(Movie m : movieStore) {
+    		if(m.getNameMovie().toLowerCase().contains(kw) || m.getDirector().toLowerCase().contains(kw) || m.getActor().toLowerCase().contains(kw)) {
+    			r.add(m);
+    		};
+    	}
+    	return r;
     }
-    // kiểm tra loại phim
+    
+    // xem phim
     public boolean playMovie(int movieId, Member user) {
         Movie movie = movieStore.stream()
             .filter(m -> m.getId() == movieId)
