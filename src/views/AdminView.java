@@ -43,8 +43,15 @@ import models.Movie;
 import models.User;
 
 public class AdminView extends JPanel {
-
-    private AdminController controller;
+	public interface AdminListener {
+        void onAddMovie(Movie movie);
+        void onDeleteMovie(Movie movie);
+        void onUpdateMovie(Movie movie);
+        void onLockAccount(User user);
+        void onUnlockAccount(User user);
+        void onWarnUser(User user, String reason);
+    }
+	private AdminListener listener;
     private DefaultTableModel movieTableModel;
     private DefaultTableModel userTableModel;
     private JTable movieTable;
@@ -53,15 +60,12 @@ public class AdminView extends JPanel {
     private List<Movie>  movies = new ArrayList<>();
     private List<Member> users  = new ArrayList<>();
 
-    public AdminView(AdminController controller) {
+    public AdminView() {
     	setBackground(Theme.BG_DARK); 
     	setLayout(new BorderLayout());
     	buildUI();
-    	this.controller = controller;
     }
-    public void setController(AdminController controller) {
-		this.controller = controller;
-	}
+	
 
 	private void buildUI() {
         JPanel header = new JPanel(new BorderLayout());
@@ -127,7 +131,9 @@ public class AdminView extends JPanel {
         c.add(valLbl); 
         return c;
     }
-
+    public void setAdminListener(AdminListener l) { 
+    	this.listener=l; 
+    }
     private JTabbedPane buildTabs() {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(Theme.fontBold(13)); 
@@ -255,8 +261,7 @@ public class AdminView extends JPanel {
             		cntF.getText().trim(),
             		lnkF.getText().isEmpty()?"/videos/"+nF.getText().trim().toLowerCase().replace(" ","-"):lnkF.getText().trim(),
             				vip.isSelected());
-            if(controller!=null) controller.addMovie(m); d.dispose();
-            loadMovies(controller.getAllMovie());
+            if(listener!=null) listener.onAddMovie(m); d.dispose();
         });
         form.add(title); 
         form.add(Box.createVerticalStrut(18));
@@ -349,8 +354,7 @@ public class AdminView extends JPanel {
             );
             target.setLink(lnkF.getText().trim()); 
             target.setVip(vip.isSelected());
-            if(controller!=null) controller.updateMovie(target); 
-            loadMovies(controller.getAllMovie());
+            if(listener!=null) listener.onUpdateMovie(target);
             d.dispose();
         });
         form.add(title); 
@@ -379,28 +383,21 @@ public class AdminView extends JPanel {
     }
 
     private void deleteSelectedMovie() {
-        int row = movieTable.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Vui lòng chọn phim cần xóa.",
-                    "Chưa chọn",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
+        int row=movieTable.getSelectedRow();
+        if(row<0){
+        	JOptionPane.showMessageDialog(this,"Vui lòng chọn phim cần xóa.","Chưa chọn",JOptionPane.WARNING_MESSAGE); 
+        	return;
         }
-        String name = (String) movieTableModel.getValueAt(row, 1);
-        int option = JOptionPane.showConfirmDialog(
-                this,
-                "Xóa phim: \"" + name + "\" ?",
-                "Xác nhận",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE
-        );
-
-        if (option == JOptionPane.YES_OPTION && controller != null) {
-            controller.deleteMovie(row);
-            loadMovies(controller.getAllMovie());
+        String name= (String) movieTableModel.getValueAt(row,1);
+        if(JOptionPane.showConfirmDialog(this,"Xóa phim: \""+name+"\"?","Xác nhận",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE)==JOptionPane.YES_OPTION){
+        	Movie t = null;
+        	for (Movie m : movies) {
+        	    if (m.getNameMovie().equals(name)) {
+        	        t = m;
+        	        break; // tìm thấy thì dừng
+        	    }
+        	}
+            if(t!=null && listener!=null) listener.onDeleteMovie(t);
         }
     }
     private void warnSelectedUser() {
@@ -427,20 +424,16 @@ public class AdminView extends JPanel {
         		reasons,
         		reasons[0]
         	);
-        if(reason!=null && controller!=null) controller.warnUser(target, reason);
+        if(reason!=null && listener!=null) listener.onWarnUser(target,reason);
     }
 
     private void toggleLock(boolean lock) {
-        int row = userTable.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Vui lòng chọn người dùng.",
-                    "Chưa chọn",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
+        int row=userTable.getSelectedRow();
+        if(row<0){
+        	JOptionPane.showMessageDialog(this,"Vui lòng chọn người dùng.","Chưa chọn",JOptionPane.WARNING_MESSAGE); 
+        	return;
         }
-        String email = (String) userTableModel.getValueAt(row, 1);
+        String email = (String) userTableModel.getValueAt(row,1);
         Member t = null;
         for (Member u : users) {
             if (u.getEmail().equals(email)) {
@@ -448,18 +441,15 @@ public class AdminView extends JPanel {
                 break;
             }
         }
-        if (t == null) {
-            return;
-        }
-        if (controller != null) {
-            if (lock) {
-                controller.lockUser(t);
-            } else {
-                controller.unlockUser(t);
-            }
+        if(t==null) return;
+        t.setAccountStatus(lock?"LOCKED":"Regular");
+        if(listener!=null){
+        	if(lock)listener.onLockAccount(t); 
+        	else listener.onUnlockAccount(t);
         }
         refreshUserTable();
     }
+
 
     public void loadMovies(List<Movie> list) {
         this.movies=list; 

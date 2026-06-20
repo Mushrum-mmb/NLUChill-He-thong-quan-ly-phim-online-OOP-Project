@@ -10,8 +10,7 @@ import models.Movie;
 /**
  * Controller xử lý các nghiệp vụ của Admin: quản lý phim và quản lý
  * tài khoản người dùng (Member). Đóng vai trò trung gian giữa AdminView
- * và dữ liệu (movieStore / memberStore), giống cách MovieController
- * đang làm với danh sách phim.
+ * và dữ liệu (movieStore / memberStore)
  */
 public class AdminController {
 
@@ -65,7 +64,7 @@ public class AdminController {
         for (int i = 0; i < movieStore.size(); i++) {
             if (movieStore.get(i).getId() == movie.getId()) {
                 movieStore.set(i, movie);
-                System.out.println("[AdminController] Đã cập nhật phim: " + movie.getNameMovie());
+                System.out.println("Đã cập nhật phim: " + movie.getNameMovie());
                 return;
             }
         }

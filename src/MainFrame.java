@@ -24,7 +24,9 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JWindow;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.UIManager;
 
 import controllers.AdminController;
 import controllers.LoginController;
@@ -223,10 +225,40 @@ public class MainFrame extends JFrame {
 
         if (isAdmin) {
             // ── Admin Panel ──
-        	AdminController adminController = new AdminController(allMovies,allUsers);
-        	AdminView adminPanel = new AdminView(adminController);
+        	AdminView adminPanel = new AdminView();
             adminPanel.loadMovies(allMovies);
             adminPanel.loadUsers(allUsers);
+            adminPanel.setAdminListener(new AdminView.AdminListener() {
+                @Override public void onAddMovie(Movie m) {
+                    allMovies.add(m);
+                    movieController = new MovieController(allMovies);
+                    adminPanel.loadMovies(allMovies);
+                    movieView.displayMovieList(allMovies);
+                    showToast("✅ Đã thêm: " + m.getNameMovie());
+                }
+                @Override public void onDeleteMovie(Movie m) {
+                    allMovies.removeIf(x -> x.getId() == m.getId());
+                    movieController = new MovieController(allMovies);
+                    adminPanel.loadMovies(allMovies);
+                    movieView.displayMovieList(allMovies);
+                    showToast("🗑 Đã xóa phim.");
+                }
+                @Override public void onUpdateMovie(Movie m) {
+                    movieController = new MovieController(allMovies);
+                    adminPanel.loadMovies(allMovies);
+                    movieView.displayMovieList(allMovies);
+                    showToast("✏️ Đã cập nhật: " + m.getNameMovie());
+                }
+                @Override public void onLockAccount(User u) {
+                    showToast("🔒 Đã khóa: " + u.getEmail());
+                }
+                @Override public void onUnlockAccount(User u) {
+                    showToast("🔓 Đã mở khóa: " + u.getEmail());
+                }
+                @Override public void onWarnUser(User u, String reason) {
+                    showToast("⚠️ Đã cảnh báo: " + u.getEmail());
+                }
+            });
             mainContent.add(adminPanel, "Admin");
         } else {
             // ── Payment View ──
@@ -355,8 +387,6 @@ public class MainFrame extends JFrame {
     // ════════════════════════════════════════════
     //  PROFILE PANEL
     // ════════════════════════════════════════════
-    // giữ tham chiếu để refresh sau thay đổi
-
     private JPanel buildProfilePanel() {
         // Admin: hiển thị card đơn giản (chỉ xem, không chỉnh sửa)
         if (isAdmin) {
@@ -388,9 +418,9 @@ public class MainFrame extends JFrame {
         }
 
        //cập nhật, đổi mật khẩu, xóa tài khoản
-        memberView = new MemberView(memberController); 
-        memberView.loadMember(currentMember);
-        memberView.setUserListener(new MemberView.MemberListener() {
+        MemberView memView = new MemberView(memberController);
+        memView.loadMember(currentMember);
+        memView.setUserListener(new MemberView.MemberListener() {
 
             @Override
             public void onUpdateProfile(Member member, String newName, String newEmail) {
@@ -430,5 +460,16 @@ public class MainFrame extends JFrame {
         toast.setLocation(loc.x+(getWidth()-toast.getWidth())/2, loc.y+getHeight()-70);
         toast.setVisible(true);
         Timer t = new Timer(2200, e -> toast.dispose()); t.setRepeats(false); t.start();
+    }
+    public static void main(String[] args) {
+  	  	System.setProperty("awt.useSystemAAFontSettings", "on");
+        System.setProperty("swing.aatext", "true");
+        SwingUtilities.invokeLater(() -> {	
+            try {
+                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+            } catch (Exception ignored) {}
+            MainFrame frame = new MainFrame();
+            frame.setVisible(true);
+        });
     }
 }

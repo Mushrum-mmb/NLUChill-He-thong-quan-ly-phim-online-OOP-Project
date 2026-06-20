@@ -16,28 +16,29 @@ import java.util.List;
  * Dialog xem phim tích hợp: video player + đánh giá sao + bình luận.
  */
 public class MovieView extends JPanel {
-
+	// giao diện thực thi
     public interface MovieListener {
         void onSearch(String keyword);
         void onWatch(Movie movie);
         void onComment(Movie movie, String content);
         void onRate(Movie movie, int stars);
     }
-
+    // khởi tạo panels và components trong movie
     private MovieListener movieListener;
-    private JTextField    searchField;
-    private JPanel        movieGrid;
-    private JLabel        resultLabel;
+    private JPanel header;
+    private JLabel title;
+    private JPanel searchBar;
+    private JButton searchBtn;
+    private JLabel searchIcon;
+    private JTextField searchField;
+    private JPanel top;
+    private JPanel movieGrid;
+    private JLabel resultLabel;
+    private JScrollPane sp;
 
-    // Dữ liệu bình luận & đánh giá (trong thực tế lấy từ DB)
+    // Dữ liệu bình luận & đánh giá (làm database tạm thời)
     private Map<Integer, List<String>> commentMap = new HashMap<>();
     private Map<Integer, Integer>      ratingMap  = new HashMap<>();
-
-    public MovieView() {
-        setBackground(Theme.BG_DARK);
-        setLayout(new BorderLayout());
-        buildUI();
-    }
 
     public void displayMovieList(List<Movie> movies) {
         movieGrid.removeAll();
@@ -51,7 +52,8 @@ public class MovieView extends JPanel {
             for (Movie m : movies) movieGrid.add(buildMovieCard(m));
         }
         resultLabel.setText(movies != null ? movies.size() + " phim" : "0 phim");
-        movieGrid.revalidate(); movieGrid.repaint();
+        movieGrid.revalidate(); 
+        movieGrid.repaint();
     }
 
     /** Mở dialog xem phim với video player + đánh giá + bình luận */
@@ -263,69 +265,91 @@ public class MovieView extends JPanel {
 
     // ── Build UI ──
     private void buildUI() {
-        JPanel header = new JPanel(new BorderLayout(16, 0));
+    	this.setBackground(Theme.BG_DARK);
+        this.setLayout(new BorderLayout());
+    	//header
+    	header = new JPanel(new BorderLayout(16, 0));
         header.setBackground(Theme.BG_DARK);
         header.setBorder(BorderFactory.createEmptyBorder(24, 32, 12, 32));
-
-        JLabel title = new JLabel("Danh sách phim");
-        title.setFont(Theme.fontBold(22)); title.setForeground(Theme.TEXT_PRIMARY);
-
-        JPanel searchBar = new JPanel(new BorderLayout()) {
+        //title
+        title = new JLabel("Danh sách phim");
+        title.setFont(Theme.fontBold(22)); 
+        title.setForeground(Theme.TEXT_PRIMARY);
+        // searchbar
+        searchBar = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(Theme.BG_INPUT); g2.fillRoundRect(0,0,getWidth(),getHeight(),12,12);
-                g2.setColor(Theme.BORDER);   g2.drawRoundRect(0,0,getWidth()-1,getHeight()-1,12,12);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON); //khử răng cưa
+                g2.setColor(Theme.BG_INPUT); 
+                g2.fillRoundRect(0,0,getWidth(),getHeight(),12,12);
+                g2.setColor(Theme.BORDER);   
+                g2.drawRoundRect(0,0,getWidth()-1,getHeight()-1,12,12);
                 g2.dispose();
             }
         };
-        searchBar.setOpaque(false); searchBar.setPreferredSize(new Dimension(300,40));
-
+        searchBar.setOpaque(false); 
+        searchBar.setPreferredSize(new Dimension(300,40));
+        //search field
         searchField = new JTextField() {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 if (getText().isEmpty() && !isFocusOwner()) {
                     Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setColor(Theme.TEXT_MUTED); g2.setFont(getFont());
+                    g2.setColor(Theme.TEXT_MUTED); 
+                    g2.setFont(getFont());
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString("Tìm phim, đạo diễn...",4,(getHeight()+fm.getAscent()-fm.getDescent())/2);
                     g2.dispose();
                 }
             }
         };
-        searchField.setOpaque(false); searchField.setBorder(BorderFactory.createEmptyBorder(0,8,0,6));
-        searchField.setFont(Theme.fontPlain(13)); searchField.setForeground(Theme.TEXT_PRIMARY);
-        searchField.setCaretColor(Theme.ACCENT); searchField.addActionListener(e->doSearch());
-
-        JButton searchBtn = accentBtn("Tìm", Color.BLACK);
-        searchBtn.setPreferredSize(new Dimension(64,40)); searchBtn.addActionListener(e->doSearch());
-
-        searchBar.add(new JLabel("  🔍"), BorderLayout.WEST);
+        searchField.setOpaque(false); 
+        searchField.setBorder(BorderFactory.createEmptyBorder(0,8,0,6));
+        searchField.setFont(Theme.fontPlain(13)); 
+        searchField.setForeground(Theme.TEXT_PRIMARY);
+        searchField.setCaretColor(Theme.ACCENT); 
+        searchField.addActionListener(e->doSearch());
+        //search button
+        searchBtn = accentBtn("Tìm", Color.BLACK);
+        searchBtn.setPreferredSize(new Dimension(64,40)); 
+        searchBtn.addActionListener(e->doSearch());
+        //search icon
+        searchIcon = new JLabel("  🔍");
+        searchIcon.setForeground(Theme.ACCENT);
+        //them các component vào panel
+        searchBar.add(searchIcon, BorderLayout.WEST);
         searchBar.add(searchField, BorderLayout.CENTER);
         searchBar.add(searchBtn,   BorderLayout.EAST);
-
-        header.add(title, BorderLayout.WEST); header.add(searchBar, BorderLayout.EAST);
-
+        
+        header.add(title, BorderLayout.WEST); 
+        header.add(searchBar, BorderLayout.EAST);
+        //hiển thị có bao nhiêu phim
         resultLabel = new JLabel("0 phim");
-        resultLabel.setFont(Theme.fontPlain(12)); resultLabel.setForeground(Theme.TEXT_SECONDARY);
+        resultLabel.setFont(Theme.fontPlain(12)); 
+        resultLabel.setForeground(Theme.TEXT_SECONDARY);
         resultLabel.setBorder(BorderFactory.createEmptyBorder(0,32,10,32));
-
-        JPanel top = new JPanel(new BorderLayout());
-        top.setBackground(Theme.BG_DARK); top.add(header,BorderLayout.NORTH); top.add(resultLabel,BorderLayout.SOUTH);
+        //
+        top = new JPanel(new BorderLayout());
+        top.setBackground(Theme.BG_DARK); 
+        top.add(header,BorderLayout.NORTH); 
+        top.add(resultLabel,BorderLayout.SOUTH);
 
         movieGrid = new JPanel(new GridLayout(0,3,16,16));
         movieGrid.setBackground(Theme.BG_DARK);
 
-        JScrollPane sp = new JScrollPane(movieGrid);
+        sp = new JScrollPane(movieGrid);
         sp.setBackground(Theme.BG_DARK); sp.getViewport().setBackground(Theme.BG_DARK);
         sp.setBorder(BorderFactory.createEmptyBorder(0,32,32,32));
         sp.getVerticalScrollBar().setUnitIncrement(16);
         sp.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        add(top, BorderLayout.NORTH); add(sp, BorderLayout.CENTER);
+        this.add(top, BorderLayout.NORTH); 
+        this.add(sp, BorderLayout.CENTER);
     }
-
-    private void doSearch() { if (movieListener!=null) movieListener.onSearch(searchField.getText().trim()); }
+    //sự kiện doSearch khi tìm kiếm
+    private void doSearch() { 
+    	if (movieListener!=null) movieListener.onSearch(searchField.getText().trim()); 
+    }
 
     private JPanel buildMovieCard(Movie movie) {
         JPanel card = new JPanel() {
@@ -431,5 +455,10 @@ public class MovieView extends JPanel {
         return b;
     }
 
-    public void setMovieListener(MovieListener l) { this.movieListener = l; }
+    public void setMovieListener(MovieListener l) { 
+    	this.movieListener = l; 
+    }
+    public MovieView() {
+        buildUI();
+    }
 }

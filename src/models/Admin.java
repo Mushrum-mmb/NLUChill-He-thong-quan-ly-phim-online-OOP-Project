@@ -9,8 +9,8 @@ public class Admin extends User{
 //	phuong thuc khac
 	public void addMovie(Movie movie) {};
 	public void deleteMovie(Movie movie) {};
-	public void lockAccount(User user) {};
-	public void manager() {};
-	
-	
+	public void lockUser(User user) {};
+	public void unlockUser(User user) {};
+	public void warnUser(Member user, String reason) {};
+	public void manage() {};
 }
